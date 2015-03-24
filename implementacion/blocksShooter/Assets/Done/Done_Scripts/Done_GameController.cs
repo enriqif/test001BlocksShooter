@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using Ligabo;
 
 public class Done_GameController : MonoBehaviour
 {
@@ -13,10 +14,12 @@ public class Done_GameController : MonoBehaviour
 	public GUIText scoreText;
 	public GUIText restartText;
 	public GUIText gameOverText;
-	
+
+	public bool started = false;
 	private bool gameOver;
 	private bool restart;
 	private int score;
+	public bool paused = false;
 	
 	void Start ()
 	{
@@ -26,20 +29,47 @@ public class Done_GameController : MonoBehaviour
 		gameOverText.text = "";
 		score = 0;
 		UpdateScore ();
-		StartCoroutine (SpawnWaves ());
+		Time.timeScale=0;
+		//StartCoroutine (SpawnWaves ());
 	}
 	
-	void Update ()
-	{
-		if (restart)
-		{
-			if (Input.GetKeyDown (KeyCode.R))
-			{
-				Application.LoadLevel (Application.loadedLevel);
-			}
+	//void Update ()
+	//{
+	//	if (restart)
+	//	{
+	//		if (Input.GetKeyDown (KeyCode.R))
+	//		{
+	//			Application.LoadLevel (Application.loadedLevel);
+	//		}
+	//	}
+	//}
+	void Update () {
+		if (!started && LigaboState.statusTracking==LigaboState.StatusTracking.Tracking) {
+			StartGame();
 		}
+		if (started && LigaboState.statusTracking!=LigaboState.StatusTracking.Tracking && !paused)
+			PauseGame();
+		if (started && paused && LigaboState.statusTracking==LigaboState.StatusTracking.Tracking )
+			ResumeGame();
+	}
+
+	void PauseGame(){
+		Time.timeScale=0;
+		paused=true;
 	}
 	
+	void ResumeGame(){
+		Time.timeScale=1;
+		paused=false;
+	}
+
+	void StartGame(){
+		Time.timeScale=1;
+		StartCoroutine (SpawnWaves ());
+		LigaboState.status=LigaboState.Status.Running;
+		started=true; 
+	}
+
 	IEnumerator SpawnWaves ()
 	{
 		yield return new WaitForSeconds (startWait);
@@ -63,7 +93,7 @@ public class Done_GameController : MonoBehaviour
 			}
 		}
 	}
-	
+
 	public void AddScore (int newScoreValue)
 	{
 		score += newScoreValue;
@@ -80,4 +110,17 @@ public class Done_GameController : MonoBehaviour
 		gameOverText.text = "Game Over!";
 		gameOver = true;
 	}
+
+	void OnGUI(){
+		float butWidth=300f;
+		LigaboUtils.GUIScaleBegin();
+		
+		if (!started && LigaboState.status!=LigaboState.Status.Running){
+			if (GUI.Button(new Rect(LigaboUtils.screenWidth/2-butWidth/2, LigaboUtils.screenHeight/2-butWidth/5/2,butWidth,butWidth/5),"Start Game"))
+				LigaboState.status=LigaboState.Status.Running;
+		}
+		
+		LigaboUtils.GUIScaleEnd();
+	}
+
 }
